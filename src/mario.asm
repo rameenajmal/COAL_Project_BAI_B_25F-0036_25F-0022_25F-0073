@@ -12,35 +12,18 @@ ORG 100h
 %endmacro
 
 start:
-    mov ax, 0013h           ; switch to mode 13h
+    mov ax, 0013h               ; switch to mode 13h
     int 10h
 
-    ; one swatch for every game colour
-    FILL 10,  20, 24, 24, COL_SKY
-    FILL 50,  20, 24, 24, COL_GROUND
-    FILL 90,  20, 24, 24, COL_BRICK
-    FILL 130, 20, 24, 24, COL_PIPE
-    FILL 170, 20, 24, 24, COL_HERO
-    FILL 210, 20, 24, 24, COL_ENEMY
-    FILL 250, 20, 24, 24, COL_COIN
-    FILL 10,  60, 24, 24, COL_TEXT
+    call ResetMap               ; fill working map from original
+    call DrawMap                ; draw the level
 
-    mov si, 100             ; row of single pixels with PutPixel
-pixel_loop:
-    push si
-    push word 100
-    push word COL_TEXT
-    call PutPixel
-    inc si
-    cmp si, 140
-    jne pixel_loop
-
-    mov ah, 0               ; wait for any key
+    mov ah, 0                   ; wait for any key
     int 16h
 
-    mov ax, 0003h           ; back to text mode
+    mov ax, 0003h               ; back to text mode
     int 10h
-    mov ax, 4C00h           ; exit to DOS
+    mov ax, 4C00h               ; exit to DOS
     int 21h
 
 %include "video.asm"
