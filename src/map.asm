@@ -84,3 +84,25 @@ ResetMap:
     pop si
     pop cx
     ret
+
+    ; GetTile(px, py) - push px, push py, call. Returns tile code in AL
+GetTile:
+    push bp
+    mov bp, sp
+    push bx
+    push dx
+
+    mov ax, [bp+4]              ; py
+    shr ax, 4                   ; row
+    mov bx, LEVEL_W
+    mul bx                      ; ax = row * 60
+    mov bx, [bp+6]              ; px
+    shr bx, 4                   ; column
+    add bx, ax                  ; offset
+    mov al, [level_working + bx]
+    xor ah, ah
+
+    pop dx
+    pop bx
+    pop bp
+    ret 4

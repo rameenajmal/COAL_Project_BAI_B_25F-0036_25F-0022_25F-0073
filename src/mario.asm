@@ -14,9 +14,23 @@ ORG 100h
 start:
     mov ax, 0013h               ; switch to mode 13h
     int 10h
+    ; sky: #5C94FC  -> 23, 37, 63
+    push word 20
+    push word 23
+    push word 37
+    push word 63
+    call SetColour
+
+    ; ground: #7B4A21 -> 30, 18, 8
+    push word 21
+    push word 30
+    push word 18
+    push word 8
+    call SetColour
 
     call ResetMap               ; fill working map from original
     call DrawMap                ; draw the level
+    
 
     mov ah, 0                   ; wait for any key
     int 16h

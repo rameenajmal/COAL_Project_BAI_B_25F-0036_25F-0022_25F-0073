@@ -64,6 +64,29 @@ FillRect:
     pop dx
     pop cx
     pop bx
-    pop ax
+    pop ax 
     pop bp
     ret 10
+; SetColour(index, r, g, b) - push in this order, values 0 to 63
+SetColour:
+    push bp
+    mov bp, sp
+    push ax
+    push dx
+
+    mov dx, 3C8h
+    mov al, [bp+10]             ; index
+    out dx, al
+    inc dx                      ; port 3C9h
+    mov al, [bp+8]              ; red
+    out dx, al
+    mov al, [bp+6]              ; green
+    out dx, al
+    mov al, [bp+4]              ; blue
+    out dx, al
+
+    pop dx
+    pop ax
+    pop bp
+    ret 8
+
