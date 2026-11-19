@@ -107,3 +107,90 @@ MoveHeroY:
     adc  [hero_y], ax
     pop  ax
     ret
+
+    ; ------------------------------------------------------------
+; UpdateHorizontal
+; Purpose : Walk / run / brake / friction (Section 5.2).
+;           Right or Left accelerates up to the speed limit
+;           (Shift = run limit). Opposite key brakes faster.
+;           No key (or both keys) -> friction slows Mario to 0.
+; Inputs  : key_state (via IsKeyHeld), hero_vx
+; Outputs : hero_vx, hero_facing updated
+; Changes : none (AX, BX, CX are saved)
+; ------------------------------------------------------------
+UpdateHorizontal:
+    push ax
+    push bx
+    push cx
+
+    mov  bx, MAX_WALK           ; BX = speed limit (walk by default)
+    push word SC_LSHIFT
+    call IsKeyHeld
+    cmp  al, 1
+    jne  .limit_ready
+    mov  bx, MAX_RUN            ; Shift held -> run limit
+.limit_ready:
+    push word SC_RIGHT
+    call IsKeyHeld
+    mov  cl, al                 ; CL = Right held?
+    push word SC_LEFT
+    call IsKeyHeld
+    mov  ch, al                 ; CH = Left held?
+
+    mov  ax, [hero_vx]          ; AX = current speed
+    cmp  cl, ch
+    je   .friction              ; none or both keys -> friction
+    cmp  cl, 1
+    je   .go_right
+    jmp  .go_left
+
+.go_right:
+    mov  byte [hero_facing], 1
+    cmp  ax, 0
+    jl   .brake_right           ; moving left -> brake
+    add  ax, ACCEL
+    jmp  .clamp_right
+.brake_right:
+    add  ax, BRAKE
+.clamp_right:
+    cmp  ax, bx                 ; signed compare with the limit
+    jle  .store
+    mov  ax, bx                 ; do not exceed the limit
+    jmp  .store
+
+.go_left:
+    mov  byte [hero_facing], 0
+    cmp  ax, 0
+    jg   .brake_left            ; moving right -> brake
+    sub  ax, ACCEL
+    jmp  .clamp_left
+.brake_left:
+    sub  ax, BRAKE
+.clamp_left:
+    neg  bx                     ; BX = -limit
+    cmp  ax, bx
+    jge  .store
+    mov  ax, bx
+    jmp  .store
+
+.friction:
+    cmp  ax, 0
+    jg   .slow_positive
+    jl   .slow_negative
+    jmp  .store                 ; already 0
+.slow_positive:
+    sub  ax, FRICTION
+    jge  .store
+    xor  ax, ax                 ; went below 0 -> stop exactly
+    jmp  .store
+.slow_negative:
+    add  ax, FRICTION
+    jle  .store
+    xor  ax, ax                 ; went above 0 -> stop exactly
+
+.store:
+    mov  [hero_vx], ax
+    pop  cx
+    pop  bx
+    pop  ax
+    ret
