@@ -194,3 +194,50 @@ UpdateHorizontal:
     pop  bx
     pop  ax
     ret
+
+; ------------------------------------------------------------
+; UpdateVertical
+; Purpose : Jump start, variable jump height and gravity.
+;           - Jump only when on_ground and Space was freshly pressed
+;             (jump_locked stops a second jump while Space stays down).
+;           - Space released while rising faster than the cut-off
+;             -> speed is cut to JUMP_CUTOFF (short hop).
+;           - Gravity is added every frame, limited to MAX_FALL.
+; Inputs  : key_state (Space), on_ground, hero_vy
+; Outputs : hero_vy, on_ground, jump_locked updated
+; Changes : none (AX is saved)
+; ------------------------------------------------------------
+UpdateVertical:
+    push ax
+
+    push word SC_SPACE
+    call IsKeyHeld
+    cmp  al, 1
+    jne  .space_up              ; Space not held
+
+    cmp  byte [on_ground], 1    ; Space held: can we start a jump?
+    jne  .gravity               ; in the air -> no double jump
+    cmp  byte [jump_locked], 1
+    je   .gravity               ; Space was already held -> no new jump
+    mov  word [hero_vy], JUMP_START
+    mov  byte [on_ground], 0
+    mov  byte [jump_locked], 1
+    jmp  .gravity
+
+.space_up:
+    mov  byte [jump_locked], 0  ; Space released -> next press may jump
+    cmp  word [hero_vy], JUMP_CUTOFF
+    jge  .gravity               ; not rising faster than the cut-off
+    mov  word [hero_vy], JUMP_CUTOFF   ; short tap -> small hop
+
+.gravity:
+    mov  ax, [hero_vy]
+    add  ax, GRAVITY            ; speed grows downward every frame
+    cmp  ax, MAX_FALL
+    jle  .store_vy
+    mov  ax, MAX_FALL           ; limit the fall speed
+.store_vy:
+    mov  [hero_vy], ax
+
+    pop  ax
+    ret

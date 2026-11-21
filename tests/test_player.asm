@@ -20,7 +20,10 @@ start:
 main_loop:
     call WaitTick               ; one step per timer tick
     call UpdateHorizontal       ; speed from keys
+    call UpdateVertical         ; jump and gravity
     call MoveHeroX              ; speed -> position
+    call MoveHeroY              ; vertical speed -> position
+    call TestFloor              ; temporary floor (Module 10 replaces it)
 
     push word [hero_x]          ; show X at row 3, col 0
     push word 480
@@ -34,6 +37,11 @@ main_loop:
     push word [hero_vy]         ; show VY at col 18
     push word 516
     call ShowHex16
+    mov  al, [on_ground]        ; show on_ground at col 24
+    add  al, '0'
+    mov  ah, 07h
+    mov  [es:528], ax
+    
 
     push word SC_ESC            ; Esc -> leave
     call IsKeyHeld
@@ -44,6 +52,28 @@ main_loop:
     mov  ax, 4C00h
     int  21h
 
+    
+; ------------------------------------------------------------
+; TestFloor
+; Purpose : Temporary floor for this test only. Real tile
+;           collision comes in Module 10.
+; Inputs  : hero_y
+; Outputs : hero_y, hero_vy, on_ground
+; Changes : none
+; ------------------------------------------------------------
+TestFloor:
+    cmp  word [hero_y], HERO_START_Y
+    jl   .in_air
+    mov  word [hero_y], HERO_START_Y    ; stand on the floor
+    mov  byte [hero_y_frac], 0
+    mov  word [hero_vy], 0
+    mov  byte [on_ground], 1
+    ret
+.in_air:
+    mov  byte [on_ground], 0
+    ret
+
+    
 ; ------------------------------------------------------------
 ; WaitTick
 ; Purpose : Wait until the BIOS timer tick counter (0040:006C)
