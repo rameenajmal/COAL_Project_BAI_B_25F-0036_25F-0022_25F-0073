@@ -1,3 +1,14 @@
+; ============================================================
+; File    : mario.asm
+; Module  : 1 (Program Skeleton and Build Setup)
+; Purpose : Main file of MARIO.COM. Sets the entry point at
+;           ORG 100h, switches to VGA Mode 13h, sets the custom
+;           palette colours, resets and draws the level map,
+;           waits for a key, then returns to text mode and DOS.
+;           All other source files are joined here with %include.
+; Build   : sh build.sh (Mac) or build.bat (Windows)
+; Author  : 25F-0036
+; ============================================================
 ORG 100h
 
 %include "constants.asm"
@@ -35,7 +46,21 @@ start:
     call SetColour
 
     call ResetMap               ; fill working map from original
+    call InitBuffer
+    mov ax, [buffer_seg]
+    mov [draw_seg], ax
+
+    call ClearBuffer
+    call DrawMap
+    call ShowBuffer
     call DrawMap                ; draw the level
+    call InitBuffer
+    mov ax, [buffer_seg]
+    mov [draw_seg], ax
+
+    call ClearBuffer
+    call DrawMap
+    call ShowBuffer
     
 
     mov ah, 0                   ; wait for any key

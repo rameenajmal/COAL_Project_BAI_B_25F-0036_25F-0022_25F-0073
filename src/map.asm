@@ -1,9 +1,23 @@
+; ============================================================
+; File    : map.asm
+; Module  : 3 (Level Map and Tile Drawing)
+; Purpose : Draws and reads the level map.
+;           DrawTile(x, y, code) - draws one 16x16 tile in its colour
+;           DrawMap  - draws the 20 visible columns x 12 rows
+;           ResetMap - copies level_original to level_working
+;                      with REP MOVSB
+;           GetTile(px, py) - returns the tile code at a pixel
+;                      position in AL (used for collision)
+;           Tiles are plain colours for now; bitmaps come later.
+; Author  : 25F-0036
+; ============================================================
 tile_colours:
     db COL_SKY, COL_GROUND, COL_BRICK, COL_COIN, COL_COIN, COL_EMPTY
     db COL_PIPE, COL_PIPE, COL_PIPE, COL_PIPE
     db COL_GROUND, COL_COIN, COL_TEXT
 
-; draws a tile bitmap, sky first for sky, coin and flag
+; DrawTile | draws one 16x16 tile | in: x, y, code (stack) 
+;| out: none | changes: none
 DrawTile:
     push bp
     mov bp, sp
@@ -45,7 +59,8 @@ dt_done:
     pop bp
     ret 6
 
-; DrawMap - draws the 20 visible columns, no parameters
+; DrawMap | draws the 20 visible columns x 12 rows 
+;| in: camera_x | out: none | changes: none
 DrawMap:
     push ax
     push bx
@@ -88,7 +103,8 @@ DrawMap:
     pop ax
     ret
 
-; ResetMap - copies original map over the working map
+; ResetMap | copies level_original to level_working 
+;| in: none | out: none | changes: none
 ResetMap:
     push cx
     push si
@@ -105,7 +121,8 @@ ResetMap:
     pop cx
     ret
 
-    ; GetTile(px, py) - push px, push py, call. Returns tile code in AL
+; GetTile | tile code at pixel position | in: px, py (stack) 
+;| out: AL = tile code | changes: AX
 GetTile:
     push bp
     mov bp, sp

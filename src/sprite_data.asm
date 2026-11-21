@@ -1,3 +1,11 @@
+; ============================================================
+; File    : sprite_data.asm
+; Module  : 4 (Sprites)
+; Purpose : Colour index tables, 16 numbers per row, 0 = transparent.
+;           Mario (small and super), Goomba, Koopa, shell, mushroom,
+;           coin, and the tile bitmaps with tile_table.
+; Author  : 25F-0036
+; ============================================================
 coin_sprite:
     db 0,0,0,0,0,0,6,6,6,6,0,0,0,0,0,0
     db 0,0,0,0,6,6,14,14,14,14,6,6,0,0,0,0

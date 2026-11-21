@@ -47,3 +47,21 @@ modules were divided so that each member has a total weight of 16.
 - All files are joined into `mario.asm` using `%include`.
 - Each member commits from his or her own GitHub account.
 - Integration work (Modules 14 and 15) needs all members, so it is done together.
+
+## Memory Choices
+
+### Frame Buffer (Module 5)
+
+- The game is a `.COM` program, so code, data and stack share one 64 KB segment.
+- A full-screen frame buffer needs 64,000 bytes, so it cannot sit beside the code.
+- The buffer lives in a separate segment placed `1000h` paragraphs (64 KB) above the program's code segment (`buffer_seg = CS + 1000h`).
+- DOS gives a `.COM` program all the free conventional memory, so this segment is free and no extra allocation call (INT 21h) is needed.
+- All drawing procedures (`PutPixel`, `FillRect`, `DrawSprite`) write to the segment stored in `draw_seg`. Setting `draw_seg = buffer_seg` sends all drawing to the buffer.
+
+### Frame Drawing Steps
+
+1. `ClearBuffer` fills the buffer with black using `rep stosw` (32000 words).
+2. The map, sprites and HUD are drawn into the buffer.
+3. `ShowBuffer` copies the buffer to video memory (`0A000h`) using `rep movsw` (32000 words), once per frame.
+
+This removes flicker, because the screen only ever receives a finished picture.

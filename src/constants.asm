@@ -1,3 +1,11 @@
+; ============================================================
+; File    : constants.asm
+; Module  : 1 (Program Skeleton and Build Setup)
+; Purpose : All named constants (EQU) of the game: screen size,
+;           tile size, level size and colour indexes. Other files
+;           must use these names instead of raw numbers.
+; Author  : 25F-0036
+; ============================================================
 SCREEN_W   EQU 320
 SCREEN_H   EQU 200
 TILE_SIZE  EQU 16

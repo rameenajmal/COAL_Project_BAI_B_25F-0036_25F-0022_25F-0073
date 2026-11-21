@@ -1,3 +1,15 @@
+; ============================================================
+; File    : level_data.asm
+; Module  : 3 (Level Map and Tile Drawing)
+; Purpose : Level data, 60 columns x 12 rows, one byte per tile
+;           (tile codes of Appendix A.2).
+;           level_original - never changed
+;           level_working  - copy used while playing
+;           Current level is a starter version: ground, bricks,
+;           ? blocks and coins. Pits, pipes, stairs and the flag
+;           pole will be added later.
+; Author  : 25F-0036
+; ============================================================
 ; original map (never changed)
 level_original:
 ; row 0 (HUD)

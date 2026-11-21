@@ -1,4 +1,17 @@
-; PutPixel(x, y, colour) - push x, push y, push colour, then call
+; ============================================================
+; File    : video.asm
+; Module  : 2 (Video Mode and Colours)
+; Purpose : Basic drawing routines for VGA Mode 13h (320x200,
+;           video segment 0A000h).
+;           PutPixel(x, y, colour)  - draws one pixel
+;           FillRect(x, y, w, h, colour) - draws a filled rectangle
+;           SetColour(index, r, g, b) - sets a palette colour
+;           (r, g, b are 0 to 63)
+;           Offset = y*320 + x, calculated with shifts (y*256 + y*64).
+;           All parameters are passed on the stack.
+; Author  : 25F-0036
+; ============================================================
+; PutPixel | draws one pixel | in: x, y, colour (stack) | out: none | changes: none
 PutPixel:
     push bp
     mov bp, sp
@@ -7,8 +20,7 @@ PutPixel:
     push di
     push es
 
-    mov ax, 0A000h
-    mov es, ax
+    mov es, [draw_seg]
     mov bx, [bp+6]          ; y
     mov di, bx
     shl di, 8               ; y * 256
@@ -25,7 +37,8 @@ PutPixel:
     pop bp
     ret 6
 
-; FillRect(x, y, w, h, colour) - push in this order, then call
+; FillRect | draws a filled rectangle | in: x, y, w, h, colour (stack) 
+;| out: none | changes: none
 FillRect:
     push bp
     mov bp, sp
@@ -36,8 +49,7 @@ FillRect:
     push di
     push es
 
-    mov ax, 0A000h
-    mov es, ax
+    mov es, [draw_seg]
     mov bx, [bp+10]         ; y
     mov di, bx
     shl di, 8
@@ -67,7 +79,8 @@ FillRect:
     pop ax 
     pop bp
     ret 10
-; SetColour(index, r, g, b) - push in this order, values 0 to 63
+; SetColour | sets one palette colour | 
+;in: index, r, g, b (stack, 0-63) | out: none | changes: none
 SetColour:
     push bp
     mov bp, sp

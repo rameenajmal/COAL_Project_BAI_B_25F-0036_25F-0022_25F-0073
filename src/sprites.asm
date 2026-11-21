@@ -1,3 +1,11 @@
+; ============================================================
+; File    : sprites.asm
+; Module  : 4 (Sprites)
+; Purpose : Draws 16x16 and 16x32 sprites to the draw segment.
+;           DrawSprite - transparent colour 0, mirror, blink skip,
+;           clipping on all four screen edges.
+; Author  : 25F-0036
+; ============================================================
 draw_seg dw 0A000h
 spr_row  dw 0
 spr_col  dw 0
