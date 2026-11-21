@@ -241,3 +241,29 @@ UpdateVertical:
 
     pop  ax
     ret
+
+; ------------------------------------------------------------
+; SetHeroPose
+; Purpose : Choose the sprite pose: jump in the air, run when
+;           moving on the ground, otherwise stand.
+; Inputs  : on_ground, hero_vx
+; Outputs : hero_pose = POSE_STAND / POSE_RUN / POSE_JUMP
+; Changes : none (AX is saved)
+; ------------------------------------------------------------
+SetHeroPose:
+    push ax
+    cmp  byte [on_ground], 1
+    jne  .in_air
+    mov  ax, [hero_vx]
+    cmp  ax, 0
+    je   .standing
+    mov  byte [hero_pose], POSE_RUN
+    jmp  .done
+.standing:
+    mov  byte [hero_pose], POSE_STAND
+    jmp  .done
+.in_air:
+    mov  byte [hero_pose], POSE_JUMP
+.done:
+    pop  ax
+    ret

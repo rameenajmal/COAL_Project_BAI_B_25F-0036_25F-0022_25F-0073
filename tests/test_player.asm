@@ -24,6 +24,7 @@ main_loop:
     call MoveHeroX              ; speed -> position
     call MoveHeroY              ; vertical speed -> position
     call TestFloor              ; temporary floor (Module 10 replaces it)
+    call SetHeroPose            ; choose stand / run / jump pose
 
     push word [hero_x]          ; show X at row 3, col 0
     push word 480
@@ -41,6 +42,11 @@ main_loop:
     add  al, '0'
     mov  ah, 07h
     mov  [es:528], ax
+
+    mov  al, [hero_pose]        ; show pose at col 30
+    add  al, '0'
+    mov  ah, 07h
+    mov  [es:540], ax
     
 
     push word SC_ESC            ; Esc -> leave
@@ -73,7 +79,7 @@ TestFloor:
     mov  byte [on_ground], 0
     ret
 
-    
+
 ; ------------------------------------------------------------
 ; WaitTick
 ; Purpose : Wait until the BIOS timer tick counter (0040:006C)
