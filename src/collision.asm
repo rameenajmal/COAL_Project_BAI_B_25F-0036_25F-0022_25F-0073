@@ -123,3 +123,68 @@ IsBodySolidAt:
     pop  bx
     pop  bp
     ret  2
+
+; ------------------------------------------------------------
+; CollideHeroX
+; Purpose : Call right after MoveHeroX. Keeps Mario inside the
+;           level (x = 0 .. 944) and stops him against solid tiles:
+;           moving right -> check right edge (x+13), snap so the
+;           edge touches the wall; moving left -> check left edge
+;           (x+2). Horizontal speed becomes 0 on contact.
+; Inputs  : hero_x, hero_vx, hero_y, form
+; Outputs : hero_x, hero_x_frac, hero_vx corrected
+; Changes : none (AX saved)
+; ------------------------------------------------------------
+CollideHeroX:
+    push ax
+
+    mov  ax, [hero_x]
+    cmp  ax, 0
+    jge  .check_right_end
+    mov  word [hero_x], 0           ; left end of the level
+    jmp  .stop
+.check_right_end:
+    cmp  ax, HERO_MAX_X
+    jle  .check_wall
+    mov  word [hero_x], HERO_MAX_X  ; right end of the level
+    jmp  .stop
+
+.check_wall:
+    mov  ax, [hero_vx]
+    cmp  ax, 0
+    je   .done                      ; not moving sideways
+    jl   .moving_left
+
+    mov  ax, [hero_x]               ; moving right: right edge
+    add  ax, HITBOX_RIGHT
+    push ax
+    call IsBodySolidAt
+    cmp  al, 1
+    jne  .done
+    mov  ax, [hero_x]
+    add  ax, HITBOX_RIGHT
+    and  ax, 0FFF0h                 ; left edge of the wall tile
+    sub  ax, HITBOX_RIGHT + 1       ; right edge just touches the wall
+    mov  [hero_x], ax
+    jmp  .stop
+
+.moving_left:
+    mov  ax, [hero_x]               ; moving left: left edge
+    add  ax, HITBOX_LEFT
+    push ax
+    call IsBodySolidAt
+    cmp  al, 1
+    jne  .done
+    mov  ax, [hero_x]
+    add  ax, HITBOX_LEFT
+    and  ax, 0FFF0h                 ; left edge of the wall tile
+    add  ax, TILE_SIZE - HITBOX_LEFT ; left edge just touches the wall
+
+    mov  [hero_x], ax
+
+.stop:
+    mov  byte [hero_x_frac], 0
+    mov  word [hero_vx], 0
+.done:
+    pop  ax
+    ret
