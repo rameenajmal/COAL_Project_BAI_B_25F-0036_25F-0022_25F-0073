@@ -16,8 +16,7 @@ tile_colours:
     db COL_PIPE, COL_PIPE, COL_PIPE, COL_PIPE
     db COL_GROUND, COL_COIN, COL_TEXT
 
-; DrawTile | draws one 16x16 tile | in: x, y, code (stack) 
-;| out: none | changes: none
+; DrawTile | draws a tile bitmap, skips sky | in: x, y, code (stack) | out: none | changes: none
 DrawTile:
     push bp
     mov bp, sp
@@ -26,25 +25,7 @@ DrawTile:
 
     mov bx, [bp+4]
     cmp bx, 0
-    je dt_fill
-    cmp bx, 11
-    je dt_fill
-    cmp bx, 12
-    je dt_fill
-    jmp dt_bitmap
-
-dt_fill:
-    push word [bp+8]
-    push word [bp+6]
-    push TILE_SIZE
-    push TILE_SIZE
-    push COL_SKY
-    call FillRect
-    cmp word [bp+4], 0
     je dt_done
-
-dt_bitmap:
-    mov bx, [bp+4]
     shl bx, 1
     mov ax, [tile_table+bx]
     push word [bp+8]
@@ -59,50 +40,74 @@ dt_done:
     pop bp
     ret 6
 
-; DrawMap | draws the 20 visible columns x 12 rows 
-;| in: camera_x | out: none | changes: none
+; DrawMap | draws the visible 21 tile columns using camera_x | in: camera_x | out: none | changes: none
 DrawMap:
     push ax
     push bx
     push cx
     push dx
-    push si
-    push di
 
-    mov si, [camera_x]
-    shr si, 4                   ; first visible column
-    mov di, level_working
-    add di, si                  ; di = first visible tile of row 0
-    mov dx, 0                   ; screen y
+    push 0
+    push 0
+    push SCREEN_W
+    push 192
+    push COL_SKY
+    call FillRect
 
-.row_loop:
-    mov cx, 0                   ; screen x
-    mov bx, di                  ; bx walks along this row
-.col_loop:
-    mov al, [bx]
-    xor ah, ah
-    push cx
-    push dx
+    mov ax, [camera_x]
+    shr ax, 4
+    mov [map_first], ax
+    mov word [map_row], 0
+
+; row loop: one map row at a time
+dm_row:
+    mov word [map_col], 0
+
+; column loop: 21 columns, skips columns past the level end
+dm_col:
+    mov bx, [map_first]
+    add bx, [map_col]
+    cmp bx, LEVEL_W
+    jge dm_next_col
+
+    mov ax, [map_row]
+    mov cx, LEVEL_W
+    mul cx
+    add bx, ax
+    mov al, [level_working+bx]
+    mov ah, 0
+    mov dx, ax
+
+    mov ax, [map_col]
+    shl ax, 4
+    mov cx, [camera_x]
+    and cx, 15
+    sub ax, cx
     push ax
+    mov ax, [map_row]
+    shl ax, 4
+    push ax
+    push dx
     call DrawTile
-    inc bx
-    add cx, TILE_SIZE
-    cmp cx, SCREEN_W
-    jb .col_loop
 
-    add di, LEVEL_W             ; next row of the map
-    add dx, TILE_SIZE
-    cmp dx, 192
-    jb .row_loop
+dm_next_col:
+    inc word [map_col]
+    cmp word [map_col], 21
+    jl dm_col
 
-    pop di
-    pop si
+    inc word [map_row]
+    cmp word [map_row], LEVEL_H
+    jl dm_row
+
     pop dx
     pop cx
     pop bx
     pop ax
     ret
 
+map_first dw 0
+map_row   dw 0
+map_col   dw 0
 ; ResetMap | copies level_original to level_working 
 ;| in: none | out: none | changes: none
 ResetMap:
