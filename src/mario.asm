@@ -27,50 +27,37 @@ start:
     push word 18
     push word 8
     call SetColour
+    ;marios skin:
+    push COL_SKIN
+    push 63
+    push 46
+    push 30
+    call SetColour
 
     call ResetMap               ; fill working map from original
     call DrawMap                ; draw the level
-    ; test: normal, mirror, blink-skip, aur 4 edges par clipping
-    push 100
-    push 50
-    push coin_sprite
-    push 0
+        push 40
+    push 80
+    push super_stand
+    push 4
     call DrawSprite
 
-    push 130
-    push 50
-    push coin_sprite
-    push 1
+    push 80
+    push 80
+    push super_run
+    push 4
     call DrawSprite
 
-    push 160
-    push 50
-    push coin_sprite
-    push 2
-    call DrawSprite
-
-    push -8
-    push 100
-    push coin_sprite
-    push 0
-    call DrawSprite
-
-    push 312
-    push 100
-    push coin_sprite
-    push 0
+    push 120
+    push 80
+    push super_jump
+    push 4
     call DrawSprite
 
     push 160
-    push -8
-    push coin_sprite
-    push 0
-    call DrawSprite
-
-    push 160
-    push 196
-    push coin_sprite
-    push 0
+    push 80
+    push super_stand
+    push 5
     call DrawSprite
 
     mov ah, 0                   ; wait for any key
