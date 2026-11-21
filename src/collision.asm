@@ -3,7 +3,10 @@
 ; Module  : 10 - Collision Detection
 ; Purpose : Tile collision for Mario (Section 5.6). Mario is moved
 ;           one axis at a time; after each move we check the tiles
-;           and push him back out of walls, floors and ceilings.
+;           and push him back out of walls, floors and ceilings.; 
+;           Reset head_hit_flag, pit_fall and flag_touched. The game
+;           calls this at the start of a life and after handling a hit.
+; Outputs : flags = 0
 ; Notes   : Hitbox is 12 pixels wide, centred in the 16-pixel
 ;           sprite (x+2 .. x+13). Height is 16 (Small) or 32 (Super).
 ;           Uses GetTile(px, py) from map.asm.
@@ -561,5 +564,83 @@ HeroOverlapsBox:
     push word [bp + 4]          ; h2
     call RectsOverlap
 
+    pop  bp
+    ret  8
+
+; ============================================================
+; Stomp or hurt decision (Section 5.6)
+; ============================================================
+HIT_NONE     EQU 0              ; no overlap
+HIT_STOMP    EQU 1              ; Mario stomps the enemy
+HIT_HURT     EQU 2              ; Mario is hurt by the touch
+HIT_IGNORED  EQU 3              ; touch ignored (Mario is invulnerable)
+
+hero_prev_feet dw 0             ; Mario's feet y in the previous frame
+
+; ------------------------------------------------------------
+; SaveHeroPrevFeet
+; Purpose : Remember where Mario's feet were BEFORE this frame's
+;           movement. Call it at the start of every frame; the
+;           stomp test needs the previous feet position.
+; Inputs  : hero_y, form
+; Outputs : hero_prev_feet = y + height
+; Changes : none (AX saved)
+; ------------------------------------------------------------
+SaveHeroPrevFeet:
+    push ax
+    call GetHeroHeight
+    add  ax, [hero_y]
+    mov  [hero_prev_feet], ax
+    pop  ax
+    ret
+
+; ------------------------------------------------------------
+; DecideStompOrHurt(x, y, w, h)   parameters on the stack
+; Purpose : Compare Mario with an enemy box (Section 5.6).
+;           Stomp = rectangles overlap AND Mario is moving down
+;           AND in the previous frame his feet were above the
+;           upper half of the enemy. Any other overlap is a hurt
+;           touch, or ignored while Mario is invulnerable.
+; Inputs  : [bp+10]=x [bp+8]=y [bp+6]=w [bp+4]=h of the enemy
+; Outputs : AL = HIT_NONE / HIT_STOMP / HIT_HURT / HIT_IGNORED
+; Changes : AX only (BX saved)
+; ------------------------------------------------------------
+DecideStompOrHurt:
+    push bp
+    mov  bp, sp
+    push bx
+
+    push word [bp + 10]
+    push word [bp + 8]
+    push word [bp + 6]
+    push word [bp + 4]
+    call HeroOverlapsBox
+    cmp  al, 1
+    jne  .none
+
+    cmp  word [hero_vy], 0
+    jle  .touch                 ; not moving down -> side/bottom touch
+    mov  bx, [bp + 8]           ; enemy top
+    mov  ax, [bp + 4]
+    shr  ax, 1                  ; half of the enemy height
+    add  bx, ax                 ; BX = middle of the enemy
+    cmp  [hero_prev_feet], bx
+    jg   .touch                 ; feet were already below the upper half
+    mov  al, HIT_STOMP
+    jmp  .out
+
+.touch:
+    cmp  word [invuln_timer], 0
+    jne  .ignored
+    mov  al, HIT_HURT
+    jmp  .out
+.ignored:
+    mov  al, HIT_IGNORED
+    jmp  .out
+.none:
+    mov  al, HIT_NONE
+.out:
+    xor  ah, ah
+    pop  bx
     pop  bp
     ret  8

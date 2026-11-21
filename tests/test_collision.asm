@@ -44,10 +44,22 @@ start:
 
 main_loop:
     call WaitTick               ; one step per tick (Esc quits here)
+    call SaveHeroPrevFeet       ; remember feet position before moving
     call UpdateHorizontal       ; speed from keys
     call UpdateVertical         ; jump and gravity
     call MoveHeroWithCollision  ; move and collide, X then Y
     call CheckFlagPole          ; flag pole touched?
+    push word 128               ; fake enemy at x=128, y=144, 16 x 16
+    push word 144
+    push word 16
+    push word 16
+    call DecideStompOrHurt
+    cmp  al, 0
+    je   .no_hit
+    cmp  byte [test_result], 0
+    jne  .no_hit                ; keep only the first result
+    mov  [test_result], al
+.no_hit:
     call SetHeroPose
 
     push word SC_ENTER          ; Enter restarts the test
@@ -57,6 +69,7 @@ main_loop:
     call ResetHero
     call ClearCollisionFlags
     mov  word [flag_points], 0
+    mov  byte [test_result], 0
 .no_restart:
     cmp  word [hero_y], 200     ; fell far enough -> respawn
     jl   .alive
@@ -94,7 +107,10 @@ main_loop:
     push word [flag_points]     ; PTS at col 48
     push word 576
     call ShowHex16
-
+    mov  al, [test_result]      ; RES at col 54
+    add  al, '0'
+    mov  ah, 07h
+    mov  [es:588], ax
     jmp  main_loop              ; always the LAST line of the loop
 
 ; ------------------------------------------------------------
@@ -171,14 +187,14 @@ ShowHex16:
     ret  4
 
 ; ---- stand-ins for Rameen's drawing code (map.asm needs them) ----
+test_result db 0                ; first stomp/hurt result of the test
 camera_x dw 0
 FillRect:
     ret  10                     ; 5 word parameters, draws nothing
 
 msg db 'Arrows move, Shift runs, Space jumps, Enter restarts, Esc quits.', 0Dh, 0Ah
     db 0Dh, 0Ah
-    db 'X     Y     VX    VY    GND   HEAD  PIT   FLAG  PTS', 0Dh, 0Ah, '$'
-
+    db 'X     Y     VX    VY    GND   HEAD  PIT   FLAG  PTS   RES', 0Dh, 0Ah, '$'
 %include "map.asm"
 %include "level_data.asm"
 %include "input.asm"
