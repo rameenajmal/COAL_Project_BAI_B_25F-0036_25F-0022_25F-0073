@@ -36,29 +36,7 @@ start:
 
     call ResetMap               ; fill working map from original
     call DrawMap                ; draw the level
-        push 40
-    push 80
-    push super_stand
-    push 4
-    call DrawSprite
-
-    push 80
-    push 80
-    push super_run
-    push 4
-    call DrawSprite
-
-    push 120
-    push 80
-    push super_jump
-    push 4
-    call DrawSprite
-
-    push 160
-    push 80
-    push super_stand
-    push 5
-    call DrawSprite
+    
 
     mov ah, 0                   ; wait for any key
     int 16h

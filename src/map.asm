@@ -3,23 +3,43 @@ tile_colours:
     db COL_PIPE, COL_PIPE, COL_PIPE, COL_PIPE
     db COL_GROUND, COL_COIN, COL_TEXT
 
-; DrawTile(x, y, code) - push x, push y, push code
+; draws a tile bitmap, sky first for sky, coin and flag
 DrawTile:
     push bp
     mov bp, sp
     push ax
     push bx
 
-    mov bx, [bp+4]              ; tile code
-    mov al, [tile_colours + bx]
-    xor ah, ah
-    push word [bp+8]            ; x
-    push word [bp+6]            ; y
-    push word TILE_SIZE
-    push word TILE_SIZE
-    push ax                     ; colour
-    call FillRect
+    mov bx, [bp+4]
+    cmp bx, 0
+    je dt_fill
+    cmp bx, 11
+    je dt_fill
+    cmp bx, 12
+    je dt_fill
+    jmp dt_bitmap
 
+dt_fill:
+    push word [bp+8]
+    push word [bp+6]
+    push TILE_SIZE
+    push TILE_SIZE
+    push COL_SKY
+    call FillRect
+    cmp word [bp+4], 0
+    je dt_done
+
+dt_bitmap:
+    mov bx, [bp+4]
+    shl bx, 1
+    mov ax, [tile_table+bx]
+    push word [bp+8]
+    push word [bp+6]
+    push ax
+    push 0
+    call DrawSprite
+
+dt_done:
     pop bx
     pop ax
     pop bp
