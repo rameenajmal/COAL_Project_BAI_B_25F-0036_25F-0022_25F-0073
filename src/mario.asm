@@ -30,7 +30,48 @@ start:
 
     call ResetMap               ; fill working map from original
     call DrawMap                ; draw the level
-    
+    ; test: normal, mirror, blink-skip, aur 4 edges par clipping
+    push 100
+    push 50
+    push coin_sprite
+    push 0
+    call DrawSprite
+
+    push 130
+    push 50
+    push coin_sprite
+    push 1
+    call DrawSprite
+
+    push 160
+    push 50
+    push coin_sprite
+    push 2
+    call DrawSprite
+
+    push -8
+    push 100
+    push coin_sprite
+    push 0
+    call DrawSprite
+
+    push 312
+    push 100
+    push coin_sprite
+    push 0
+    call DrawSprite
+
+    push 160
+    push -8
+    push coin_sprite
+    push 0
+    call DrawSprite
+
+    push 160
+    push 196
+    push coin_sprite
+    push 0
+    call DrawSprite
 
     mov ah, 0                   ; wait for any key
     int 16h
