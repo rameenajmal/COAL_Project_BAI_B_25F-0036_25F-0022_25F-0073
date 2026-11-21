@@ -318,4 +318,248 @@ MoveHeroWithCollision:
 ClearCollisionFlags:
     mov  byte [head_hit_flag], 0
     mov  byte [pit_fall], 0
+    mov  byte [flag_touched], 0
     ret
+
+; ============================================================
+; Flag pole and rectangle overlap
+; ============================================================
+TILE_FLAG_POLE EQU 12           ; tile code of the flag pole (Appendix A.2)
+HITBOX_WIDTH   EQU 12           ; Mario's hitbox width
+
+flag_touched   db 0             ; 1 = Mario has touched the flag pole
+flag_row       db 0             ; map row of Mario's feet at the touch
+flag_points    dw 0             ; points for that height (5000 .. 100)
+
+; ------------------------------------------------------------
+; GetTileAt(px, py)             parameters on the stack
+; Purpose : Safe tile read. Returns 0 (sky) for any pixel outside
+;           the map, otherwise the tile code from GetTile.
+; Inputs  : [bp+6] = px, [bp+4] = py   (push px first, then py)
+; Outputs : AL = tile code (AH = 0)
+; Changes : AX only
+; ------------------------------------------------------------
+GetTileAt:
+    push bp
+    mov  bp, sp
+
+    mov  ax, [bp + 6]
+    cmp  ax, LEVEL_PIXELS_W
+    jae  .outside               ; px outside the level
+    mov  ax, [bp + 4]
+    cmp  ax, MAP_BOTTOM
+    jae  .outside               ; py outside the map
+    push word [bp + 6]
+    push word [bp + 4]
+    call GetTile                ; AL = tile code
+    jmp  .done
+.outside:
+    xor  al, al
+.done:
+    xor  ah, ah
+    pop  bp
+    ret  4
+
+; ------------------------------------------------------------
+; BodyHasFlagAt(px)             parameter on the stack
+; Purpose : Look down the line x = px along Mario's body (top,
+;           middle, bottom) for a flag pole tile.
+; Inputs  : [bp+4] = px, hero_y, form
+; Outputs : AL = 1 if a flag pole tile is found, else 0
+; Changes : AX only (CX, DX saved)
+; ------------------------------------------------------------
+BodyHasFlagAt:
+    push bp
+    mov  bp, sp
+    push cx
+    push dx
+
+    call GetHeroHeight
+    mov  cx, ax
+    dec  cx                     ; CX = offset of the bottom body row
+    xor  dx, dx                 ; DX = probe offset (0, middle, bottom)
+.probe:
+    mov  ax, [hero_y]
+    add  ax, dx                 ; AX = probe y
+    push word [bp + 4]
+    push ax
+    call GetTileAt
+    cmp  al, TILE_FLAG_POLE
+    je   .found
+    cmp  dx, cx
+    jae  .none                  ; bottom row was the last probe
+    cmp  dx, 0
+    jne  .go_bottom
+    mov  dx, cx
+    shr  dx, 1                  ; next probe: middle of the body
+    jmp  .probe
+.go_bottom:
+    mov  dx, cx                 ; last probe: bottom row
+    jmp  .probe
+.none:
+    xor  al, al
+    jmp  .out
+.found:
+    mov  al, 1
+.out:
+    xor  ah, ah
+    pop  dx
+    pop  cx
+    pop  bp
+    ret  2
+
+; ------------------------------------------------------------
+; GetFlagPoints(row)            parameter on the stack
+; Purpose : Flag score zones (Section 5.4) from the map row of
+;           Mario's feet: rows 2-3 = 5000, 4 = 2000, 5 = 800,
+;           6-7 = 400, 8 = 100.
+; Inputs  : [bp+4] = map row of Mario's feet
+; Outputs : AX = points
+; Changes : AX only
+; ------------------------------------------------------------
+GetFlagPoints:
+    push bp
+    mov  bp, sp
+
+    mov  ax, [bp + 4]
+    cmp  ax, 3
+    jbe  .top
+    cmp  ax, 4
+    je   .row4
+    cmp  ax, 5
+    je   .row5
+    cmp  ax, 7
+    jbe  .row67
+    mov  ax, 100                ; row 8 (bottom)
+    jmp  .out
+.top:
+    mov  ax, 5000
+    jmp  .out
+.row4:
+    mov  ax, 2000
+    jmp  .out
+.row5:
+    mov  ax, 800
+    jmp  .out
+.row67:
+    mov  ax, 400
+.out:
+    pop  bp
+    ret  2
+
+; ------------------------------------------------------------
+; CheckFlagPole
+; Purpose : Detect Mario touching the flag pole. Looks at the
+;           body centre and one pixel beyond the right edge, so
+;           the pole is detected as soon as Mario reaches it.
+;           On the first touch it records the feet row and points.
+; Inputs  : hero_x, hero_y, form, flag_touched
+; Outputs : flag_touched = 1, flag_row, flag_points
+; Changes : none (AX saved)
+; ------------------------------------------------------------
+CheckFlagPole:
+    push ax
+
+    cmp  byte [flag_touched], 1
+    je   .done                  ; already touched, keep first result
+
+    mov  ax, [hero_x]
+    add  ax, 8                  ; body centre
+    push ax
+    call BodyHasFlagAt
+    cmp  al, 1
+    je   .touched
+
+    mov  ax, [hero_x]
+    add  ax, HITBOX_RIGHT + 1   ; one pixel beyond the right edge
+    push ax
+    call BodyHasFlagAt
+    cmp  al, 1
+    jne  .done
+
+.touched:
+    call GetHeroHeight
+    add  ax, [hero_y]
+    dec  ax                     ; bottom pixel row of Mario
+    shr  ax, 4                  ; map row of his feet
+    mov  [flag_row], al
+    push ax
+    call GetFlagPoints          ; AX = points for that row
+    mov  [flag_points], ax
+    mov  byte [flag_touched], 1
+.done:
+    pop  ax
+    ret
+
+; ------------------------------------------------------------
+; RectsOverlap(x1, y1, w1, h1, x2, y2, w2, h2)   8 words on stack
+; Purpose : Rectangle overlap test. The rectangles overlap when
+;           x1 < x2+w2, x2 < x1+w1, y1 < y2+h2 and y2 < y1+h1.
+; Inputs  : pushed in the order x1, y1, w1, h1, x2, y2, w2, h2
+;           [bp+18]=x1 [bp+16]=y1 [bp+14]=w1 [bp+12]=h1
+;           [bp+10]=x2 [bp+8]=y2  [bp+6]=w2  [bp+4]=h2
+; Outputs : AL = 1 overlap, 0 no overlap (AH = 0)
+; Changes : AX only (BX saved)
+; ------------------------------------------------------------
+RectsOverlap:
+    push bp
+    mov  bp, sp
+    push bx
+
+    mov  ax, [bp + 18]          ; x1
+    mov  bx, [bp + 10]
+    add  bx, [bp + 6]           ; x2 + w2
+    cmp  ax, bx
+    jge  .no
+    mov  ax, [bp + 10]          ; x2
+    mov  bx, [bp + 18]
+    add  bx, [bp + 14]          ; x1 + w1
+    cmp  ax, bx
+    jge  .no
+    mov  ax, [bp + 16]          ; y1
+    mov  bx, [bp + 8]
+    add  bx, [bp + 4]           ; y2 + h2
+    cmp  ax, bx
+    jge  .no
+    mov  ax, [bp + 8]           ; y2
+    mov  bx, [bp + 16]
+    add  bx, [bp + 12]          ; y1 + h1
+    cmp  ax, bx
+    jge  .no
+    mov  al, 1
+    jmp  .out
+.no:
+    xor  al, al
+.out:
+    xor  ah, ah
+    pop  bx
+    pop  bp
+    ret  16
+
+; ------------------------------------------------------------
+; HeroOverlapsBox(x, y, w, h)   parameters on the stack
+; Purpose : Does Mario's hitbox overlap the box (x, y, w, h)?
+;           Used for enemies, shells, mushrooms and coins.
+; Inputs  : [bp+10]=x [bp+8]=y [bp+6]=w [bp+4]=h  (push x first)
+; Outputs : AL = 1 overlap, 0 no overlap
+; Changes : AX only
+; ------------------------------------------------------------
+HeroOverlapsBox:
+    push bp
+    mov  bp, sp
+
+    mov  ax, [hero_x]
+    add  ax, HITBOX_LEFT
+    push ax                     ; x1 = hitbox left edge
+    push word [hero_y]          ; y1
+    push word HITBOX_WIDTH      ; w1
+    call GetHeroHeight
+    push ax                     ; h1 = 16 or 32
+    push word [bp + 10]         ; x2
+    push word [bp + 8]          ; y2
+    push word [bp + 6]          ; w2
+    push word [bp + 4]          ; h2
+    call RectsOverlap
+
+    pop  bp
+    ret  8

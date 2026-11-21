@@ -1,7 +1,8 @@
 ; ============================================================
 ; File    : test_collision.asm
-; Purpose : Test Module 10. Shows X, Y, VX, VY, GND, HEAD, PIT (hex).
-;           The test builds its own wall and pit in the working map.
+; Purpose : Test Module 10 (floor, walls, head hit, pit, flag pole).
+;           Builds its own wall, stairs, flag pole and pit in the
+;           working map. Enter = restart the test, Esc = quit.
 ; ============================================================
 ORG 100h
 %include "constants.asm"        ; EQUs only (no bytes)
@@ -11,9 +12,21 @@ start:
     call ResetHero              ; Mario at the start
 
     ; ---- test obstacles (working map only) ----
-    mov  byte [level_working + 9*LEVEL_W + 12], 10   ; 1-tile wall, col 12
-    mov  byte [level_working + 10*LEVEL_W + 20], 0   ; pit: cols 20..22,
-    mov  byte [level_working + 10*LEVEL_W + 21], 0   ;      rows 10 and 11
+    mov  byte [level_working + 9*LEVEL_W + 12], 10   ; stair 1 high, col 12
+    mov  byte [level_working + 9*LEVEL_W + 13], 10   ; stair 2 high, col 13
+    mov  byte [level_working + 8*LEVEL_W + 13], 10
+    mov  byte [level_working + 9*LEVEL_W + 14], 10   ; stair 3 high, col 14
+    mov  byte [level_working + 8*LEVEL_W + 14], 10
+    mov  byte [level_working + 7*LEVEL_W + 14], 10
+    mov  byte [level_working + 9*LEVEL_W + 15], 10   ; flag base block, col 15
+    mov  cx, 7                                       ; flag pole rows 2..8
+    mov  bx, level_working + 2*LEVEL_W + 15
+.pole:
+    mov  byte [bx], 12
+    add  bx, LEVEL_W
+    loop .pole
+    mov  byte [level_working + 10*LEVEL_W + 20], 0   ; pit: cols 20..22
+    mov  byte [level_working + 10*LEVEL_W + 21], 0
     mov  byte [level_working + 10*LEVEL_W + 22], 0
     mov  byte [level_working + 11*LEVEL_W + 20], 0
     mov  byte [level_working + 11*LEVEL_W + 21], 0
@@ -34,7 +47,17 @@ main_loop:
     call UpdateHorizontal       ; speed from keys
     call UpdateVertical         ; jump and gravity
     call MoveHeroWithCollision  ; move and collide, X then Y
+    call CheckFlagPole          ; flag pole touched?
     call SetHeroPose
+
+    push word SC_ENTER          ; Enter restarts the test
+    call IsKeyHeld
+    cmp  al, 1
+    jne  .no_restart
+    call ResetHero
+    call ClearCollisionFlags
+    mov  word [flag_points], 0
+.no_restart:
     cmp  word [hero_y], 200     ; fell far enough -> respawn
     jl   .alive
     call ResetHero              ; (PIT flag stays 1 as proof)
@@ -64,6 +87,13 @@ main_loop:
     add  al, '0'
     mov  ah, 07h
     mov  [es:552], ax
+    mov  al, [flag_touched]     ; FLAG at col 42
+    add  al, '0'
+    mov  ah, 07h
+    mov  [es:564], ax
+    push word [flag_points]     ; PTS at col 48
+    push word 576
+    call ShowHex16
 
     jmp  main_loop              ; always the LAST line of the loop
 
@@ -145,9 +175,9 @@ camera_x dw 0
 FillRect:
     ret  10                     ; 5 word parameters, draws nothing
 
-msg db 'Arrows move, Shift runs, Space jumps, Esc quits.', 0Dh, 0Ah
+msg db 'Arrows move, Shift runs, Space jumps, Enter restarts, Esc quits.', 0Dh, 0Ah
     db 0Dh, 0Ah
-    db 'X     Y     VX    VY    GND   HEAD  PIT', 0Dh, 0Ah, '$'
+    db 'X     Y     VX    VY    GND   HEAD  PIT   FLAG  PTS', 0Dh, 0Ah, '$'
 
 %include "map.asm"
 %include "level_data.asm"
