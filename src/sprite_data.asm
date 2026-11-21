@@ -343,3 +343,5 @@ stair_tile:
 
 flag_tile:
     times 16 db 0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0
+
+test_mario_x dw 32

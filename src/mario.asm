@@ -48,9 +48,16 @@ start:
     mov [draw_seg], ax
 
 ; test: arrow keys move camera_x by 4, Esc exits
+; test: arrow keys move a test Mario, camera follows, Esc exits
 test_loop:
-    call ClearBuffer
     call DrawMap
+    mov ax, [test_mario_x]
+    sub ax, [camera_x]
+    push ax
+    push 144
+    push mario_stand
+    push 0
+    call DrawSprite
     call ShowBuffer
     mov ah, 0
     int 16h
@@ -63,17 +70,20 @@ test_loop:
     jmp test_loop
 
 test_right:
-    cmp word [camera_x], 640
-    jge test_loop
-    add word [camera_x], 4
-    jmp test_loop
+    add word [test_mario_x], 4
+    cmp word [test_mario_x], 944
+    jle test_update
+    mov word [test_mario_x], 944
+    jmp test_update
 
 test_left:
-    cmp word [camera_x], 0
-    jle test_loop
-    sub word [camera_x], 4
-    jmp test_loop
+    sub word [test_mario_x], 4
 
+test_update:
+    push word [test_mario_x]
+    call UpdateCamera
+    mov [test_mario_x], ax
+    jmp test_loop
 test_exit:
     mov ax, 0003h               ; back to text mode
     int 10h
