@@ -47,43 +47,56 @@ start:
     mov ax, [buffer_seg]
     mov [draw_seg], ax
 
-; test: arrow keys move camera_x by 4, Esc exits
-; test: arrow keys move a test Mario, camera follows, Esc exits
+    call InstallTimer
+
+; test: one bar grows 4 pixels per second, esc exits
 test_loop:
-    call DrawMap
-    mov ax, [test_mario_x]
-    sub ax, [camera_x]
-    push ax
-    push 144
-    push mario_stand
+    call WaitTick
+    call UpdateClock
+
     push 0
-    call DrawSprite
+    push 0
+    push SCREEN_W
+    push 200
+    push COL_BLACK
+    call FillRect
+
+    mov ax, 300
+    sub ax, [game_time]
+    shl ax, 2
+    add ax, 4
+    push 10
+    push 60
+    push ax
+    push 20
+    push COL_COIN
+    call FillRect
+
+    mov ax, [tick_count]
+    and ax, 127
+    add ax, 4
+    push 10
+    push 120
+    push ax
+    push 20
+    push COL_HERO
+    call FillRect
+
     call ShowBuffer
+
+    mov ah, 1
+    int 16h
+    jz test_loop
     mov ah, 0
     int 16h
-    cmp ah, 4Dh
-    je test_right
-    cmp ah, 4Bh
-    je test_left
     cmp ah, 01h
-    je test_exit
-    jmp test_loop
+    jne test_loop
 
-test_right:
-    add word [test_mario_x], 4
-    cmp word [test_mario_x], 944
-    jle test_update
-    mov word [test_mario_x], 944
-    jmp test_update
-
-test_left:
-    sub word [test_mario_x], 4
-
-test_update:
-    push word [test_mario_x]
-    call UpdateCamera
-    mov [test_mario_x], ax
-    jmp test_loop
+    call RestoreTimer
+    mov ax, 0003h               ; back to text mode
+    int 10h
+    mov ax, 4C00h               ; exit to DOS
+    int 21h
 test_exit:
     mov ax, 0003h               ; back to text mode
     int 10h
