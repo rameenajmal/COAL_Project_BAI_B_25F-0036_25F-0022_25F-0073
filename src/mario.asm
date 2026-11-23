@@ -42,66 +42,7 @@ start:
     push 46
     push 30
     call SetColour
-    call ResetMap               ; fill working map from original
-    call InitBuffer
-    mov ax, [buffer_seg]
-    mov [draw_seg], ax
-
-    call InstallTimer
-
-; test: one bar grows 4 pixels per second, esc exits
-test_loop:
-    call WaitTick
-    call UpdateClock
-
-    push 0
-    push 0
-    push SCREEN_W
-    push 200
-    push COL_BLACK
-    call FillRect
-
-    mov ax, 300
-    sub ax, [game_time]
-    shl ax, 2
-    add ax, 4
-    push 10
-    push 60
-    push ax
-    push 20
-    push COL_COIN
-    call FillRect
-
-    mov ax, [tick_count]
-    and ax, 127
-    add ax, 4
-    push 10
-    push 120
-    push ax
-    push 20
-    push COL_HERO
-    call FillRect
-
-    call ShowBuffer
-
-    mov ah, 1
-    int 16h
-    jz test_loop
-    mov ah, 0
-    int 16h
-    cmp ah, 01h
-    jne test_loop
-
-    call RestoreTimer
-    mov ax, 0003h               ; back to text mode
-    int 10h
-    mov ax, 4C00h               ; exit to DOS
-    int 21h
-test_exit:
-    mov ax, 0003h               ; back to text mode
-    int 10h
-    mov ax, 4C00h               ; exit to DOS
-    int 21h
+    call GameMain               ; Modules 11, 13, 14, 15 (states.asm), never returns
 
 %include "video.asm"
 %include "buffer.asm"
