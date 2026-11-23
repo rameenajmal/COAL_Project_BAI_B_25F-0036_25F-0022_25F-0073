@@ -65,3 +65,10 @@ modules were divided so that each member has a total weight of 16.
 3. `ShowBuffer` copies the buffer to video memory (`0A000h`) using `rep movsw` (32000 words), once per frame.
 
 This removes flicker, because the screen only ever receives a finished picture.
+
+### Timer and Game Clock (Module 8)
+
+- The game hooks `INT 1Ch` (the user timer hook). `TimerHandler` increments `tick_count` and then jumps to the old handler, so the BIOS timer keeps working.
+- The timer rate is not changed (about 18.2 ticks per second), so no rate restore is needed. The old vector is restored by `RestoreTimer` on exit.
+- The game loop calls `WaitTick`, so the speed does not depend on the PC speed.
+- `UpdateClock` is called once per frame and counts `game_time` down by 1 every 18 frames (18 ticks is treated as one second).
