@@ -10,6 +10,7 @@
 ; Notes   : Hitbox is 12 pixels wide, centred in the 16-pixel
 ;           sprite (x+2 .. x+13). Height is 16 (Small) or 32 (Super).
 ;           Uses GetTile(px, py) from map.asm.
+; Author  : 25F-0022 (Faryal Fatima)
 ; ============================================================
 
 ; ---- Collision constants ----

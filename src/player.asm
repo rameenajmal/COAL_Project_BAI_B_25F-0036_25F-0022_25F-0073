@@ -7,6 +7,7 @@
 ;           low byte = fraction). Position is a 16-bit pixel word
 ;           plus an 8-bit fraction byte, because x goes up to 944
 ;           and does not fit in the high byte of an 8.8 word.
+; Author  : 25F-0022 (Faryal Fatima)
 ; ============================================================
 
 ; ---- Physics constants (Appendix A.5, 8.8 fixed point) ----

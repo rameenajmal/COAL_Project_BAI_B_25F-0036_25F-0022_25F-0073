@@ -4,6 +4,7 @@
 ; Purpose : Replace the BIOS keyboard handler with our own so
 ;           several keys (Right + Shift + Space) can be held at
 ;           the same time. Keeps a 128-byte key-state table.
+; Author  : 25F-0022 (Faryal Fatima)
 ; ============================================================
 
 ; ---- Scan codes (Appendix A.3) ----
