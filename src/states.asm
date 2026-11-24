@@ -333,6 +333,7 @@ StatePlaying:
 DrawScene:
     call ClearBuffer
     call DrawMap
+    call DrawCoinPops               ; coins popping out of "?" blocks
     call DrawEntities
     call DrawHero
     call DrawHUD
